@@ -1,0 +1,92 @@
+# Need to be reviewed, maybe i need to take it from my HW. 
+# -------------------------------Question B1-------------------------------
+view0 = cv2.imread(r'.\images\view0.tif', cv2.IMREAD_GRAYSCALE)
+view6 = cv2.imread(r'.\images\view6.tif', cv2.IMREAD_GRAYSCALE)
+
+block_size = 2  # Size of the neighborhood considered for corner detection
+ksize = 9      # Aperture parameter of Sobel derivative used for corner detection
+k = 0.04     # Harris detector free parameter
+corner_response_view0 = cv2.cornerHarris(view0, blockSize=block_size, ksize=ksize, k=k)
+corner_response_view6 = cv2.cornerHarris(view6, blockSize=block_size, ksize=ksize, k=k)
+# Threshold the corner response to get the corner points
+threshold_view0 = 0.009 * corner_response_view0.max()  
+threshold_view6 = 0.009 * corner_response_view6.max()  
+corner_points_view0 = np.argwhere(corner_response_view0 > threshold_view0)
+corner_points_view6 = np.argwhere(corner_response_view6 > threshold_view6)
+
+# # Draw circles around detected corners
+# image_with_corners_view0 = view0.copy()
+# image_with_corners_view6 = view6.copy()
+# for point in corner_points_view0:
+#     cv2.circle(image_with_corners_view0, tuple(point[::-1]), 5, (0, 0, 255), 2)
+# for point in corner_points_view6:
+#     cv2.circle(image_with_corners_view6, tuple(point[::-1]), 5, (0, 0, 255), 2)
+
+# #Display the original image and the one with corners
+# # plt.imshow(image_with_corners_view0)
+# # plt.show()
+# # plt.imshow(image_with_corners_view6)
+# # plt.show()
+
+
+______________________________________________
+strongest_corners_view6 = corner_points_view6[np.argsort(corner_response_view6[corner_points_view6[:, 0], corner_points_view6[:, 1]])[::-1]]
+strongest_corners_view0 = corner_points_view0[np.argsort(corner_response_view0[corner_points_view0[:, 0], corner_points_view0[:, 1]])[::-1]]
+
+size = 7
+Num_of_patches = 120
+
+descriptors_view0 = np.array([[pixel,patch_from_im(view0,pixel,size)] for pixel in strongest_corners_view0[0:Num_of_patches + 1]
+                    if pixel[0] - size >= 0 and pixel[0] + size < view0.shape[0] and pixel[1] - size >= 0 and pixel[1] + size < view0.shape[1]],dtype='object')
+descriptors_view6 = np.array([[pixel,patch_from_im(view6,pixel,size) ] for pixel in strongest_corners_view6[0:Num_of_patches + 1]
+                      if pixel[0] - size >= 0 and pixel[0] + size < view6.shape[0] and pixel[1] - size >= 0 and pixel[1] + size < view6.shape[1]],dtype='object')
+
+view0_Indexses = np.vstack(descriptors_view0[:,0])
+view6_Indexses = np.vstack(descriptors_view6[:,0])
+
+# SSD:
+# def SSD(descriptors1,descriptors2)
+    # descriptors_matrix_view0 = np.vstack(descriptors_view0[:,1])
+    # descriptors_matrix_view6 = np.vstack(descriptors_view6[:,1])
+
+#     view0_Indexses = np.vstack(descriptors_view0[:,0])
+#     view6_Indexses = np.vstack(descriptors_view6[:,0])
+
+#     descriptors_matrix_view0 = np.vstack(descriptors_view0[:,1])
+#     descriptors_matrix_view6 = np.vstack(descriptors_view6[:,1])
+    
+#     ssd_matrix = np.sum((descriptors_matrix_view0[:, None, :] - descriptors_matrix_view6[None, :, :])**2, axis=2)
+#     Indexses_List = np.argmin(ssd_matrix,axis = 1)
+#     Matching_Corners = []
+#     for i,value in enumerate(Indexses_List):
+#         Matching_Corners.append([view0_Indexses[i],view6_Indexses[value]])
+#     Matching_Corners = np.array(Matching_Corners)
+#     return Matching_Corners
+
+Matching_Corners = SSD(descriptors_view0,descriptors_view6,view0_Indexses,view6_Indexses)
+Matched_Patch_Image(view0,view6,corner_points_view0,corner_points_view6,view0_Indexses,Matching_Corners,view6_Indexses)
+# height = min(view0.shape[0], view6.shape[0])
+# width = min(view0.shape[1], view6.shape[1])
+# image1 = view0[:height, :width]
+# image2 = view6[:height, :width]
+# result = np.hstack((image1, image2))
+# result_rgb = cv2.cvtColor(result, cv2.COLOR_BGR2RGB)
+
+# thickness = 2 
+# for point in corner_points_view0:
+#     cv2.circle(result_rgb, tuple(point[::-1]), 2, (0, 0, 0), 2)
+# for point in corner_points_view6:
+#     cv2.circle(result_rgb, (point[1] + width,point[0]), 2, (0, 0, 0), 2)
+
+# for i, point in enumerate(Matching_Corners):
+#     line_color = (np.random.randint(0, 256), np.random.randint(0, 256), np.random.randint(0, 256))
+#     cv2.line(result_rgb, point[0][::-1], (point[1][1] + width, point[1][0]), line_color,thickness)
+
+# for i, point in enumerate(view0_Indexses):
+#     cv2.circle(result_rgb, tuple(point[::-1]), 1, (0, 0, 255), 2)
+
+# for i, point in enumerate(view6_Indexses):
+#     cv2.circle(result_rgb, (point[1]+ width , point[0]), 1, (255, 0, 0), 2)
+
+# plt.figure(figsize=(48,48))
+# plt.imshow(result_rgb)
